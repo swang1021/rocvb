@@ -2,7 +2,7 @@
 #'
 #' Computes point estimates and confidence intervals for the AUC of a continuous
 #' test when disease verification is missing at random (MAR). The function returns
-#' four sets of estimates, obtained using the bias-corrected estimators FI, MSI,
+#' four estimates simultaneously, obtained using the bias-corrected estimators FI, MSI,
 #' IPW, and SPE proposed by Alonzo and Pepe (2005).
 #'
 #' @param T Test results; a positive numeric vector.
@@ -338,7 +338,7 @@ auc.ci.mar <- function(T,
 #'
 #' Computes point estimates and confidence intervals for sensitivity of a continuous test
 #' at a fixed level of specificity when disease verification is missing at random (MAR).
-#' The function returns four sets of estimates, obtained using the bias-corrected estimators
+#' The function returns four estimates simultaneously, obtained using the bias-corrected estimators
 #' FI, MSI, IPW, and SPE proposed by Alonzo and Pepe (2005).
 #'
 #' @param T Test results; a positive numeric vector.
@@ -742,7 +742,7 @@ sen.ci.mar <- function(T,
 #'
 #' Computes point estimates and confidence intervals for maximum Youden index of a
 #' continuous test when disease verification is missing at random (MAR). The function
-#' returns four sets of estimates, obtained using the bias-corrected estimators
+#' returns four estimates simultaneously, obtained using the bias-corrected estimators
 #' FI, MSI, IPW, and SPE proposed by Alonzo and Pepe (2005).
 #'
 #' @param T Test results; a positive numeric vector.

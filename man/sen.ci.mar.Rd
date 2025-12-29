@@ -58,7 +58,7 @@ A list with elements:
 \description{
 Computes point estimates and confidence intervals for sensitivity of a continuous test
 at a fixed level of specificity when disease verification is missing at random (MAR).
-The function returns four sets of estimates, obtained using the bias-corrected estimators
+The function returns four estimates simultaneously, obtained using the bias-corrected estimators
 FI, MSI, IPW, and SPE proposed by Alonzo and Pepe (2005).
 }
 \details{

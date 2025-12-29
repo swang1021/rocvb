@@ -52,7 +52,7 @@ A list with elements:
 \description{
 Computes point estimates and confidence intervals for the AUC of a continuous
 test when disease verification is missing at random (MAR). The function returns
-four sets of estimates, obtained using the bias-corrected estimators FI, MSI,
+four estimates simultaneously, obtained using the bias-corrected estimators FI, MSI,
 IPW, and SPE proposed by Alonzo and Pepe (2005).
 }
 \details{
