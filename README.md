@@ -1,4 +1,4 @@
-# rocvb
+# rocvb: R package for ROC analysis under verification bias
 
 ## Overview
 
