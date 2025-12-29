@@ -38,51 +38,7 @@ remotes::install_github("swang1021/rocvb")
 
 ## Technical details
 
-For each target, the package returns:
-- point estimates based on FI, MSI, IPW, and SPE
-- confidence intervals based on bootstrap and/or hybrid empirical likelihood methods
-- sample size and missingness summaries
-
-The methods implemented in `rocvb` assume that disease verification is
-**missing at random (MAR)** conditional on the observed test result and covariate.
-
-Let  
-- \(T_i\) denote the continuous test measurement for subject \(i\),  
-- \(A_i\) denote a covariate,  
-- \(D_i \in \{0,1\}\) denote the true disease status, and  
-- \(V_i \in \{0,1\}\) indicate whether the disease status is verified.
-
-### Disease model
-
-The disease process is modeled using a **probit regression** based on verified
-subjects only. The conditional probability of disease is given by
-
-\[
-\rho_i = P(D_i = 1 \mid T_i, A_i)
-       = \Phi(\alpha + \beta T_i + \gamma A_i),
-\]
-
-where \(\Phi(\cdot)\) denotes the standard normal cumulative distribution function.
-This model is used to impute disease probabilities for unverified subjects and
-forms the basis for the FI, MSI, and SPE estimators.
-
-### Verification model
-
-The verification model is estimated using a logit regression model linear in
-\(T\) and \(A\) based on all subjects, given by
-
-\[
-\operatorname{logit}(\pi_i)
-= \log\!\left( \frac{\pi_i}{1 - \pi_i} \right)
-= \alpha + \beta T_i + \gamma A_i,
-\quad i = 1, \ldots, n.
-\]
-
-Here, \(\pi_i = P(V_i = 1 \mid T_i, A_i)\) denotes the probability that the disease
-status of subject \(i\) is verified.
-
-This model characterizes the verification process under the MAR assumption and
-is used to construct inverse probability weights for the IPW and SPE estimators.
+See the function documentation in R for statistical details.
 
 ---
 
