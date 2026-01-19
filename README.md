@@ -37,7 +37,7 @@ remotes::install_github("swang1021/rocvb")
 
 ## Technical details
 
-See the function documentation in R for statistical details.
+See the function documentation and help in R for statistical details.
 
 ---
 
