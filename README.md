@@ -2,8 +2,7 @@
 
 ## Overview
 
-`rocvb` provides point estimates and confidence intervals for ROC-based diagnostic 
-accuracy measures when disease verification is subject to **verification bias**.
+`rocvb` provides point estimates and confidence intervals for ROC‑based diagnostic accuracy metrics for tests and biomarkers subject to **verification bias**.
 
 `rocvb` currently supports inference for the following accuracy metrics for two-class 
 continuous tests under missing-at-random (MAR) disease verification:
