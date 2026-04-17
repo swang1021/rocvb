@@ -1,9 +1,8 @@
-# rocvb
+# rocvb: R package for ROC inference under verification bias
 
 ## Overview
 
-`rocvb` provides point estimates and confidence intervals for ROC-based diagnostic 
-accuracy measures when disease verification is subject to **verification bias**.
+`rocvb` provides point estimates and confidence intervals for ROC‑based diagnostic accuracy metrics for tests and biomarkers subject to **verification bias**.
 
 `rocvb` currently supports inference for the following accuracy metrics for two-class 
 continuous tests under missing-at-random (MAR) disease verification:
@@ -38,7 +37,7 @@ remotes::install_github("swang1021/rocvb")
 
 ## Technical details
 
-See the function documentation in R for statistical details.
+See the function documentation and help in R for statistical details.
 
 ---
 
