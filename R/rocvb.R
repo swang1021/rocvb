@@ -366,6 +366,8 @@ auc.ci.mar <- function(T,
 #'   \item{\code{BTII.intervals}}{Bootstrap confidence intervals, type II.}
 #'   \item{\code{HEL1.intervals}}{Hybrid empirical likelihood confidence intervals, type I.}
 #'   \item{\code{HEL2.intervals}}{Hybrid empirical likelihood confidence intervals, type II.}
+#'   \item{\code{IFEL1.intervals}}{Influence Function-based empirical likelihood confidence intervals, type I.}
+#'   \item{\code{IFEL2.intervals}}{Influence Function-based empirical likelihood confidence intervals, type II.}
 #' }
 #'
 #' @references
@@ -379,8 +381,9 @@ auc.ci.mar <- function(T,
 #'
 #' @details
 #' The function targets sensitivity evaluated at specificity level `p` (i.e.,
-#' sensitivity at the threshold achieving specificity `p`). Bootstrap and
-#' hybrid empirical likelihood confidence intervals are computed as returned in the list.
+#' sensitivity at the threshold achieving specificity `p`). Bootstrap,
+#' hybrid empirical likelihood and influence function-based empirical likelihood
+#'  confidence intervals are computed as returned in the list.
 #'
 #' The disease model \eqn{\rho} is estimated using a probit regression model
 #' linear in \eqn{T} and \eqn{A} based on verified subjects, given by
@@ -485,54 +488,6 @@ sen.ci.mar <- function(T,
       pi  = pi_hat
     ))
   }
-  # #Function used to Calculate Bootstrap Copies of Jtilde
-  # BSP = function(dummy) {
-  #   boots = sample(1:n, n, replace = TRUE)
-  #   Tb = T[boots]
-  #   Db = D[boots]
-  #   Ab = A[boots]
-  #   Vb = V[boots]
-  #   if (sum(Vb * Db) >= 1 && sum(Vb * (1 - Db)) >= 1)
-  #   {
-  #     wtsb = get_weights(Tb, Db, Ab, Vb, n)
-  #     sum.bwd = apply(wtsb$wd, 1, sum)
-  #     sum.bwn = apply(wtsb$wn, 1, sum)
-  #     #Find J and cutoff
-  #     Tbsort = sort(Tb)
-  #     cbtest = Tbsort[1:n - 1] + (Tbsort[2:n] - Tbsort[1:n - 1]) / 2
-  #     jb = NULL
-  #     for (c in cbtest) {
-  #       tb_temp_2 = (Tb < c) + 0
-  #       #Spe
-  #       speb = drop(tb_temp_2 %*% t(wtsb$wn)) / sum.bwn
-  #       speb = pmin(pmax(speb, 0), 1)
-  #       jb = rbind(jb, speb)
-  #     }
-  #     cpb = cbtest[apply(jb <= p, 2, which.min)]
-  #     #cp = ctest[apply(abs(jm - p), 2, which.min)]
-  #     #Sen
-  #     compb = outer(
-  #       Tb,
-  #       cpb,
-  #       FUN = function(x, y)
-  #         x >= y
-  #     )
-  #     #senb = diag((wtsb$wd %*% compb) / apply(wtsb$wd, 1, sum))
-  #     senb = diag((wtsb$wd %*% compb + 0.5 * za^2) / (apply(wtsb$wd, 1, sum) + za^2))
-  #     TTb = matrix(rep(Tb, n), n)
-  #     Ib = (TTb >= t(TTb)) + 0
-  #     HEL_Ub = drop(wtsb$wn %*% Ib / apply(wtsb$wn, 1, sum))
-  #     HEL_Lb = wtsb$wd * ((HEL_Ub <= 1 - p) - senhat) / apply(wtsb$wd, 1, sum)
-  #     HEL_rb = apply(HEL_Lb, 1, function(row) {
-  #       tryCatch(
-  #         emplik::el.test(row, mu = 0)$'-2LLR',
-  #         error = function(e)
-  #           NA
-  #       )
-  #     })
-  #     return(c(senb, unname(HEL_rb)))
-  #   }
-  # }
 
   BSP = function(dummy) {
     boots = sample(1:n, n, replace = TRUE)
@@ -598,23 +553,7 @@ sen.ci.mar <- function(T,
       ))
     return(c(senb, unname(HEL_rb), unname(IFEL_rb)))
   }
-  #
-  # HEL_LLR = function(delta) {
-  #   #calculate delta and U for HEL
-  #   #HEL_U = drop(wts$wn[i, ] %*% It / sum(wts$wn[i, ]))
-  #   HEL_L = wts$wd[i, ] * ((HEL_U[i, ] <= 1 - p) - as.vector(delta)) / sum(wts$wd[i, ])
-  #   if (all(HEL_L == 0)) {
-  #     HEL_L = wts$wd[i, ] * ((HEL_U[i, ] <= 1 - p) - as.vector(delta) + 0.01) / sum(wts$wd[i, ])
-  #   }
-  #   HEL_r = emplik::el.test(HEL_L, mu = 0)$'-2LLR'
-  #   return(HEL_r)
-  # }
-  # HEL1_LLR = function(delta) {
-  #   HEL_LLR(delta) - BSQ[i]
-  # }
-  # HEL2_LLR = function(delta) {
-  #   HEL_LLR(delta) * (7 / 9)^3 / BSmedian[i] - stats::qchisq(1 - alpha, 1)
-  # }
+
   Find_zero = function(f) {
     est_zero = which(sapply(seq(0, 1, search_step), f) < 0)
     if (length(est_zero) == 0) {
@@ -827,39 +766,6 @@ sen.ci.mar <- function(T,
                     Find_zero(HEL2_LLR))
   }
 
-  # #Bootstrap Intervals
-  # BSP.est = do.call(cbind, Filter(Negate(is.null), lapply(1:n.boot, FUN = BSP)))
-  # BSP.sen = BSP.est[1:4, ]
-  # BSP.r = BSP.est[5:8, ]
-  # #BPL = apply(BSP.est, 1, stats::quantile, probs = 0.025, na.rm = TRUE)
-  # #BPU = apply(BSP.est, 1, stats::quantile, probs = 0.975, na.rm = TRUE)
-  # BCmean = apply(BSP.sen, 1, mean, na.rm = TRUE)
-  # BCvar = apply(BSP.sen, 1, stats::var, na.rm = TRUE)
-  # BCL1 = sent - za * sqrt(BCvar)
-  # BCU1 = sent + za * sqrt(BCvar)
-  # BCL1 = pmin(pmax(BCL1, 0), 1)
-  # BCU1 = pmin(pmax(BCU1, 0), 1)
-  # BCL2 = BCmean - za * sqrt(BCvar)
-  # BCU2 = BCmean + za * sqrt(BCvar)
-  # BCL2 = pmin(pmax(BCL2, 0), 1)
-  # BCU2 = pmin(pmax(BCU2, 0), 1)
-  # LBC1 = BCU1 - BCL1
-  # LBC2 = BCU2 - BCL2
-  # #LBP = BPU - BPL
-  # BSQ = apply(BSP.r,
-  #             1,
-  #             stats::quantile,
-  #             probs = 1 - alpha,
-  #             na.rm = TRUE)
-  # BSmedian = apply(BSP.r, 1, stats::median, na.rm = TRUE)
-  # HEL1_CI = NULL
-  # for (i in 1:4) {
-  #   HEL1_CI = rbind(HEL1_CI, Find_zero(HEL1_LLR))
-  # }
-  # HEL2_CI = NULL
-  # for (i in 1:4) {
-  #   HEL2_CI = rbind(HEL2_CI, Find_zero(HEL2_LLR))
-  # }
   AC = cbind(AC.lb, AC.ub)
   WS = cbind(WS.lb, WS.ub)
   BTI = cbind(BCL1, BCU1)

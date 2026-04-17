@@ -53,6 +53,8 @@ A list with elements:
 \item{\code{BTII.intervals}}{Bootstrap confidence intervals, type II.}
 \item{\code{HEL1.intervals}}{Hybrid empirical likelihood confidence intervals, type I.}
 \item{\code{HEL2.intervals}}{Hybrid empirical likelihood confidence intervals, type II.}
+\item{\code{IFEL1.intervals}}{Influence Function-based empirical likelihood confidence intervals, type I.}
+\item{\code{IFEL2.intervals}}{Influence Function-based empirical likelihood confidence intervals, type II.}
 }
 }
 \description{
@@ -63,8 +65,9 @@ FI, MSI, IPW, and SPE proposed by Alonzo and Pepe (2005).
 }
 \details{
 The function targets sensitivity evaluated at specificity level \code{p} (i.e.,
-sensitivity at the threshold achieving specificity \code{p}). Bootstrap and
-hybrid empirical likelihood confidence intervals are computed as returned in the list.
+sensitivity at the threshold achieving specificity \code{p}). Bootstrap,
+hybrid empirical likelihood and influence function-based empirical likelihood
+confidence intervals are computed as returned in the list.
 
 The disease model \eqn{\rho} is estimated using a probit regression model
 linear in \eqn{T} and \eqn{A} based on verified subjects, given by
