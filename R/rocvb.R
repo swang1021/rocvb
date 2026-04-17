@@ -485,70 +485,136 @@ sen.ci.mar <- function(T,
       pi  = pi_hat
     ))
   }
-  #Function used to Calculate Bootstrap Copies of Jtilde
+  # #Function used to Calculate Bootstrap Copies of Jtilde
+  # BSP = function(dummy) {
+  #   boots = sample(1:n, n, replace = TRUE)
+  #   Tb = T[boots]
+  #   Db = D[boots]
+  #   Ab = A[boots]
+  #   Vb = V[boots]
+  #   if (sum(Vb * Db) >= 1 && sum(Vb * (1 - Db)) >= 1)
+  #   {
+  #     wtsb = get_weights(Tb, Db, Ab, Vb, n)
+  #     sum.bwd = apply(wtsb$wd, 1, sum)
+  #     sum.bwn = apply(wtsb$wn, 1, sum)
+  #     #Find J and cutoff
+  #     Tbsort = sort(Tb)
+  #     cbtest = Tbsort[1:n - 1] + (Tbsort[2:n] - Tbsort[1:n - 1]) / 2
+  #     jb = NULL
+  #     for (c in cbtest) {
+  #       tb_temp_2 = (Tb < c) + 0
+  #       #Spe
+  #       speb = drop(tb_temp_2 %*% t(wtsb$wn)) / sum.bwn
+  #       speb = pmin(pmax(speb, 0), 1)
+  #       jb = rbind(jb, speb)
+  #     }
+  #     cpb = cbtest[apply(jb <= p, 2, which.min)]
+  #     #cp = ctest[apply(abs(jm - p), 2, which.min)]
+  #     #Sen
+  #     compb = outer(
+  #       Tb,
+  #       cpb,
+  #       FUN = function(x, y)
+  #         x >= y
+  #     )
+  #     #senb = diag((wtsb$wd %*% compb) / apply(wtsb$wd, 1, sum))
+  #     senb = diag((wtsb$wd %*% compb + 0.5 * za^2) / (apply(wtsb$wd, 1, sum) + za^2))
+  #     TTb = matrix(rep(Tb, n), n)
+  #     Ib = (TTb >= t(TTb)) + 0
+  #     HEL_Ub = drop(wtsb$wn %*% Ib / apply(wtsb$wn, 1, sum))
+  #     HEL_Lb = wtsb$wd * ((HEL_Ub <= 1 - p) - senhat) / apply(wtsb$wd, 1, sum)
+  #     HEL_rb = apply(HEL_Lb, 1, function(row) {
+  #       tryCatch(
+  #         emplik::el.test(row, mu = 0)$'-2LLR',
+  #         error = function(e)
+  #           NA
+  #       )
+  #     })
+  #     return(c(senb, unname(HEL_rb)))
+  #   }
+  # }
+
   BSP = function(dummy) {
     boots = sample(1:n, n, replace = TRUE)
     Tb = T[boots]
     Db = D[boots]
     Ab = A[boots]
     Vb = V[boots]
-    if (sum(Vb * Db) >= 1 && sum(Vb * (1 - Db)) >= 1)
-    {
-      wtsb = get_weights(Tb, Db, Ab, Vb, n)
-      sum.bwd = apply(wtsb$wd, 1, sum)
-      sum.bwn = apply(wtsb$wn, 1, sum)
-      #Find J and cutoff
-      Tbsort = sort(Tb)
-      cbtest = Tbsort[1:n - 1] + (Tbsort[2:n] - Tbsort[1:n - 1]) / 2
-      jb = NULL
-      for (c in cbtest) {
-        tb_temp_2 = (Tb < c) + 0
-        #Spe
-        speb = drop(tb_temp_2 %*% t(wtsb$wn)) / sum.bwn
-        speb = pmin(pmax(speb, 0), 1)
-        jb = rbind(jb, speb)
-      }
-      cpb = cbtest[apply(jb <= p, 2, which.min)]
-      #cp = ctest[apply(abs(jm - p), 2, which.min)]
-      #Sen
-      compb = outer(
-        Tb,
-        cpb,
-        FUN = function(x, y)
-          x >= y
-      )
-      #senb = diag((wtsb$wd %*% compb) / apply(wtsb$wd, 1, sum))
-      senb = diag((wtsb$wd %*% compb + 0.5 * za^2) / (apply(wtsb$wd, 1, sum) + za^2))
-      TTb = matrix(rep(Tb, n), n)
-      Ib = (TTb >= t(TTb)) + 0
-      HEL_Ub = drop(wtsb$wn %*% Ib / apply(wtsb$wn, 1, sum))
-      HEL_Lb = wtsb$wd * ((HEL_Ub <= 1 - p) - senhat) / apply(wtsb$wd, 1, sum)
-      HEL_rb = apply(HEL_Lb, 1, function(row) {
-        tryCatch(
-          emplik::el.test(row, mu = 0)$'-2LLR',
-          error = function(e)
-            NA
-        )
-      })
-      return(c(senb, unname(HEL_rb)))
+    if (sum(Vb * Db) < 1 || sum(Vb * (1 - Db)) < 1)
+      return(NULL)
+
+    wtsb = get_weights(Tb, Db, Ab, Vb, n)
+    Tbsort = sort(Tb)
+    cbtest = Tbsort[1:n - 1] + (Tbsort[2:n] - Tbsort[1:n - 1]) / 2
+
+    tb_temp_mat = (matrix(rep(Tb, length(cbtest)), nrow = n) < matrix(rep(cbtest, each = n), nrow = n)) + 0
+    jb = t(apply(tb_temp_mat, 2, function(x)
+      drop(x %*% t(wtsb$wn)) / apply(wtsb$wn, 1, sum)))
+    cpb = cbtest[apply(jb <= p, 2, which.min)]
+
+    compb = outer(
+      Tb,
+      cpb,
+      FUN = function(x, y)
+        x >= y
+    )
+    senb = diag((wtsb$wd %*% compb + 0.5 * za^2) / (apply(wtsb$wd, 1, sum) + za^2))
+
+    TTb = matrix(rep(Tb, n), n)
+    Ib = (TTb >= t(TTb)) + 0
+    HEL_Ub = drop(wtsb$wn %*% Ib / apply(wtsb$wn, 1, sum))
+    HEL_Lb = wtsb$wd * ((HEL_Ub <= 1 - p) - senhat) / apply(wtsb$wd, 1, sum)
+    HEL_rb = apply(HEL_Lb, 1, function(row)
+      tryCatch(
+        emplik::el.test(row, mu = 0)$'-2LLR',
+        error = function(e)
+          NA
+      ))
+
+    IFEL_Wb = NULL
+    for (k in 1:length(cpb)) {
+      cb = cpb[k]
+      wt_fb_pos = pmax(wtsb$wn[k, ], 0)
+      wt_gb_pos = pmax(wtsb$wd[k, ], 0)
+      wt_fb = wt_fb_pos / sum(wt_fb_pos)
+      wt_gb = wt_gb_pos / sum(wt_gb_pos)
+
+      den.fb = stats::density(Tb, weights = wt_fb)
+      den.gb = stats::density(Tb, weights = wt_gb)
+      fchatb = max(stats::splinefun(den.fb$x, den.fb$y)(cb), 1e-8)
+      gchatb = stats::splinefun(den.gb$x, den.gb$y)(cb)
+
+      W_Ab = (wtsb$wd[k, ] / mean(wtsb$wd[k, ])) * (Tb > cb)
+      W_Bb = (wtsb$wd[k, ] / mean(wtsb$wd[k, ]))
+      W_Cb = (gchatb / fchatb) * (wtsb$wn[k, ] / mean(wtsb$wn[k, ])) * ((Tb <= cb) - p)
+
+      IFEL_Wb = rbind(IFEL_Wb, W_Ab - (W_Bb * senhat[k]) + W_Cb)
     }
+    IFEL_rb = apply(IFEL_Wb, 1, function(row)
+      tryCatch(
+        emplik::el.test(row, mu = 0)$'-2LLR',
+        error = function(e)
+          NA
+      ))
+    return(c(senb, unname(HEL_rb), unname(IFEL_rb)))
   }
-  HEL_LLR = function(delta) {
-    #calculate delta and U for HEL
-    #HEL_U = drop(wts$wn[i, ] %*% It / sum(wts$wn[i, ]))
-    HEL_L = wts$wd[i, ] * ((HEL_U[i, ] <= 1 - p) - as.vector(delta)) / sum(wts$wd[i, ])
-    if (all(HEL_L == 0)) {
-      HEL_L = wts$wd[i, ] * ((HEL_U[i, ] <= 1 - p) - as.vector(delta) + 0.01) / sum(wts$wd[i, ])
-    }
-    HEL_r = emplik::el.test(HEL_L, mu = 0)$'-2LLR'
-    return(HEL_r)
-  }
-  HEL1_LLR = function(delta) {
-    HEL_LLR(delta) - BSQ[i]
-  }
-  HEL2_LLR = function(delta) {
-    HEL_LLR(delta) * (7 / 9)^3 / BSmedian[i] - stats::qchisq(1 - alpha, 1)
-  }
+  #
+  # HEL_LLR = function(delta) {
+  #   #calculate delta and U for HEL
+  #   #HEL_U = drop(wts$wn[i, ] %*% It / sum(wts$wn[i, ]))
+  #   HEL_L = wts$wd[i, ] * ((HEL_U[i, ] <= 1 - p) - as.vector(delta)) / sum(wts$wd[i, ])
+  #   if (all(HEL_L == 0)) {
+  #     HEL_L = wts$wd[i, ] * ((HEL_U[i, ] <= 1 - p) - as.vector(delta) + 0.01) / sum(wts$wd[i, ])
+  #   }
+  #   HEL_r = emplik::el.test(HEL_L, mu = 0)$'-2LLR'
+  #   return(HEL_r)
+  # }
+  # HEL1_LLR = function(delta) {
+  #   HEL_LLR(delta) - BSQ[i]
+  # }
+  # HEL2_LLR = function(delta) {
+  #   HEL_LLR(delta) * (7 / 9)^3 / BSmedian[i] - stats::qchisq(1 - alpha, 1)
+  # }
   Find_zero = function(f) {
     est_zero = which(sapply(seq(0, 1, search_step), f) < 0)
     if (length(est_zero) == 0) {
@@ -667,45 +733,141 @@ sen.ci.mar <- function(T,
   WS.lb = pmin(pmax(WS.lb, 0), 1)
   WS.ub = pmin(pmax(WS.ub, 0), 1)
   WS.l = WS.ub - WS.lb
-  #Bootstrap Intervals
+
   BSP.est = do.call(cbind, Filter(Negate(is.null), lapply(1:n.boot, FUN = BSP)))
   BSP.sen = BSP.est[1:4, ]
-  BSP.r = BSP.est[5:8, ]
-  #BPL = apply(BSP.est, 1, stats::quantile, probs = 0.025, na.rm = TRUE)
-  #BPU = apply(BSP.est, 1, stats::quantile, probs = 0.975, na.rm = TRUE)
+  BHEL.r = BSP.est[5:8, ]
+  BIFEL.r = BSP.est[9:12, ]
+
   BCmean = apply(BSP.sen, 1, mean, na.rm = TRUE)
   BCvar = apply(BSP.sen, 1, stats::var, na.rm = TRUE)
-  BCL1 = sent - za * sqrt(BCvar)
-  BCU1 = sent + za * sqrt(BCvar)
-  BCL1 = pmin(pmax(BCL1, 0), 1)
-  BCU1 = pmin(pmax(BCU1, 0), 1)
-  BCL2 = BCmean - za * sqrt(BCvar)
-  BCU2 = BCmean + za * sqrt(BCvar)
-  BCL2 = pmin(pmax(BCL2, 0), 1)
-  BCU2 = pmin(pmax(BCU2, 0), 1)
+
+  BCL1 = pmin(pmax(sent - za * sqrt(BCvar), 0), 1)
+  BCU1 = pmin(pmax(sent + za * sqrt(BCvar), 0), 1)
+  BCL2 = pmin(pmax(BCmean - za * sqrt(BCvar), 0), 1)
+  BCU2 = pmin(pmax(BCmean + za * sqrt(BCvar), 0), 1)
   LBC1 = BCU1 - BCL1
   LBC2 = BCU2 - BCL2
-  #LBP = BPU - BPL
-  BSQ = apply(BSP.r,
-              1,
-              stats::quantile,
-              probs = 1 - alpha,
-              na.rm = TRUE)
-  BSmedian = apply(BSP.r, 1, stats::median, na.rm = TRUE)
+
+  BHELQ = apply(BHEL.r, 1, stats::quantile, probs = 0.95, na.rm = TRUE)
+  BHELM = apply(BHEL.r, 1, stats::median, na.rm = TRUE)
+  BIFELQ = apply(BIFEL.r, 1, stats::quantile, probs = 0.95, na.rm = TRUE)
+  BIFELM = apply(BIFEL.r, 1, stats::median, na.rm = TRUE)
+
   HEL1_CI = NULL
-  for (i in 1:4) {
-    HEL1_CI = rbind(HEL1_CI, Find_zero(HEL1_LLR))
-  }
   HEL2_CI = NULL
+  IFEL1_CI = NULL
+  IFEL2_CI = NULL
+
   for (i in 1:4) {
-    HEL2_CI = rbind(HEL2_CI, Find_zero(HEL2_LLR))
+    # --------------------------------------------------------------------------
+    # Precompute IFEL Matrices once per estimator
+    # --------------------------------------------------------------------------
+    wt_f_pos = pmax(wts$wn[i, ], 0)
+    wt_g_pos = pmax(wts$wd[i, ], 0)
+    wt_f = wt_f_pos / sum(wt_f_pos)
+    wt_g = wt_g_pos / sum(wt_g_pos)
+
+    den.f = stats::density(T, weights = wt_f)
+    den.g = stats::density(T, weights = wt_g)
+    fchat = max(stats::splinefun(den.f$x, den.f$y)(cp[i]), 1e-8)
+    gchat = stats::splinefun(den.g$x, den.g$y)(cp[i])
+
+    W_A = (wts$wd[i, ] / mean(wts$wd[i, ])) * (T > cp[i])
+    W_B = (wts$wd[i, ] / mean(wts$wd[i, ]))
+    W_C = (gchat / fchat) * (wts$wn[i, ] / mean(wts$wn[i, ])) * ((T <= cp[i]) - p)
+
+    IFEL_LLR = function(delta) {
+      tryCatch(
+        emplik::el.test(W_A - (W_B * delta) + W_C, mu = 0)$'-2LLR',
+        error = function(e)
+          NA
+      )
+    }
+    IFEL1_LLR = function(delta) {
+      IFEL_LLR(delta) - BIFELQ[i]
+    }
+    IFEL2_LLR = function(delta) {
+      IFEL_LLR(delta) * (7 / 9)^3 / BIFELM[i] - stats::qchisq(1 - alpha, 1)
+    }
+
+    IFEL1_CI = rbind(IFEL1_CI,
+                     Find_zero(IFEL1_LLR))
+    IFEL2_CI = rbind(IFEL2_CI,
+                     Find_zero(IFEL2_LLR))
+
+    # --------------------------------------------------------------------------
+    # Precompute HEL Matrices once per estimator
+    # --------------------------------------------------------------------------
+    HEL_A = wts$wd[i, ] * (HEL_U[i, ] <= 1 - p) / sum(wts$wd[i, ])
+    HEL_B = wts$wd[i, ] / sum(wts$wd[i, ])
+
+    HEL_LLR = function(delta) {
+      HEL_L = HEL_A - (HEL_B * delta)
+      if (all(HEL_L == 0)) {
+        HEL_L = HEL_L + (wts$wd[i, ] * 0.01 / sum(wts$wd[i, ]))
+      }
+      tryCatch(
+        emplik::el.test(HEL_L, mu = 0)$'-2LLR',
+        error = function(e)
+          NA
+      )
+    }
+
+    HEL1_LLR = function(delta) {
+      HEL_LLR(delta) - BHELQ[i]
+    }
+    HEL2_LLR = function(delta) {
+      HEL_LLR(delta) * (7 / 9)^3 / BHELM[i] - stats::qchisq(1 - alpha, 1)
+    }
+
+    HEL1_CI = rbind(HEL1_CI,
+                    Find_zero(HEL1_LLR))
+    HEL2_CI = rbind(HEL2_CI,
+                    Find_zero(HEL2_LLR))
   }
+
+  # #Bootstrap Intervals
+  # BSP.est = do.call(cbind, Filter(Negate(is.null), lapply(1:n.boot, FUN = BSP)))
+  # BSP.sen = BSP.est[1:4, ]
+  # BSP.r = BSP.est[5:8, ]
+  # #BPL = apply(BSP.est, 1, stats::quantile, probs = 0.025, na.rm = TRUE)
+  # #BPU = apply(BSP.est, 1, stats::quantile, probs = 0.975, na.rm = TRUE)
+  # BCmean = apply(BSP.sen, 1, mean, na.rm = TRUE)
+  # BCvar = apply(BSP.sen, 1, stats::var, na.rm = TRUE)
+  # BCL1 = sent - za * sqrt(BCvar)
+  # BCU1 = sent + za * sqrt(BCvar)
+  # BCL1 = pmin(pmax(BCL1, 0), 1)
+  # BCU1 = pmin(pmax(BCU1, 0), 1)
+  # BCL2 = BCmean - za * sqrt(BCvar)
+  # BCU2 = BCmean + za * sqrt(BCvar)
+  # BCL2 = pmin(pmax(BCL2, 0), 1)
+  # BCU2 = pmin(pmax(BCU2, 0), 1)
+  # LBC1 = BCU1 - BCL1
+  # LBC2 = BCU2 - BCL2
+  # #LBP = BPU - BPL
+  # BSQ = apply(BSP.r,
+  #             1,
+  #             stats::quantile,
+  #             probs = 1 - alpha,
+  #             na.rm = TRUE)
+  # BSmedian = apply(BSP.r, 1, stats::median, na.rm = TRUE)
+  # HEL1_CI = NULL
+  # for (i in 1:4) {
+  #   HEL1_CI = rbind(HEL1_CI, Find_zero(HEL1_LLR))
+  # }
+  # HEL2_CI = NULL
+  # for (i in 1:4) {
+  #   HEL2_CI = rbind(HEL2_CI, Find_zero(HEL2_LLR))
+  # }
   AC = cbind(AC.lb, AC.ub)
   WS = cbind(WS.lb, WS.ub)
   BTI = cbind(BCL1, BCU1)
   BTII = cbind(BCL2, BCU2)
   HELI = HEL1_CI
   HELII = HEL2_CI
+  IFELI = IFEL1_CI
+  IFELII = IFEL2_CI
   names(senhat) = c("FI", "MSI", "IPW", "SPE")
   names(sent) = c("FI", "MSI", "IPW", "SPE")
   rownames(AC) = c("FI", "MSI", "IPW", "SPE")
@@ -714,12 +876,16 @@ sen.ci.mar <- function(T,
   rownames(BTII) = c("FI", "MSI", "IPW", "SPE")
   rownames(HELI) = c("FI", "MSI", "IPW", "SPE")
   rownames(HELII) = c("FI", "MSI", "IPW", "SPE")
+  rownames(IFELI) = c("FI", "MSI", "IPW", "SPE")
+  rownames(IFELII) = c("FI", "MSI", "IPW", "SPE")
   colnames(AC) = c("Lower", "Upper")
   colnames(WS) = c("Lower", "Upper")
   colnames(BTI) = c("Lower", "Upper")
   colnames(BTII) = c("Lower", "Upper")
   colnames(HELI) = c("Lower", "Upper")
   colnames(HELII) = c("Lower", "Upper")
+  colnames(IFELI) = c("Lower", "Upper")
+  colnames(IFELII) = c("Lower", "Upper")
   return(
     list(
       n.total = n,
@@ -733,7 +899,9 @@ sen.ci.mar <- function(T,
       BTI.intervals = BTI,
       BTII.intervals = BTII,
       HEL1.intervals = HELI,
-      HEL2.intervals = HELII
+      HEL2.intervals = HELII,
+      IFEL1.intervals = IFELI,
+      IFEL2.intervals = IFELII
     )
   )
 }
