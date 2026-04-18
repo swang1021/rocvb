@@ -1,6 +1,6 @@
 Package: rocvb
 Type: Package
-Title: ROC Analysis Under Verification Bias
+Title: ROC-Based Inference for Diagnostic Test Accuracy and Biomarker Evaluation Under Verification Bias
 Version: 0.1.0
 Authors@R: c(
     person(
@@ -9,6 +9,7 @@ Authors@R: c(
       role = c("aut", "cre")
     )
   )
+Maintainer: Shirui Wang <wangshirui1021@gmail.com>
 Description: Point estimation and confidence intervals for key metrics in ROC analysis with verification-biased data.
 License: MIT + file LICENSE
 Encoding: UTF-8
