@@ -5,12 +5,12 @@ Version: 0.1.0
 Authors@R: c(
     person(
       "Shirui", "Wang",
-      email = "swang58@student.gsu.edu",
+      email = "wangshirui1021@gmail.com",
       role = c("aut", "cre")
     )
   )
 Maintainer: Shirui Wang <wangshirui1021@gmail.com>
-Description: Point estimation and confidence intervals for key metrics in ROC analysis with verification-biased data.
+Description: Implements bias‑corrected estimation and inference for ROC‑based metrics in diagnostic test accuracy studies and biomarker evaluation under verification bias.
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
