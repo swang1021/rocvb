@@ -4,10 +4,18 @@
 \alias{yi.ci.mar}
 \title{Confidence Intervals for Youden Index Under MAR Verification}
 \usage{
-yi.ci.mar(T, D, A, alpha = 0.05, precision = 1e-04, n.boot = 1000, plot = TRUE)
+yi.ci.mar(
+  Test,
+  D,
+  A,
+  alpha = 0.05,
+  precision = 1e-04,
+  n.boot = 1000,
+  plot = TRUE
+)
 }
 \arguments{
-\item{T}{Test results; a positive numeric vector.}
+\item{Test}{Test results; a positive numeric vector.}
 
 \item{D}{Verified disease status; a logical vector with possible missing values.}
 
@@ -49,7 +57,7 @@ FI, MSI, IPW, and SPE proposed by Alonzo and Pepe (2005).
 Bootstrap and MOVER-based confidence intervals are computed for the maximum Youden index.
 
 The disease model \eqn{\rho} is estimated using a probit regression model
-linear in \eqn{T} and \eqn{A} based on verified subjects, given by
+linear in \eqn{Test} and \eqn{A} based on verified subjects, given by
 
 \deqn{
   \rho_i = P(D_i = 1 \mid T_i, A_i)
@@ -60,7 +68,7 @@ linear in \eqn{T} and \eqn{A} based on verified subjects, given by
 where \eqn{\Phi} denotes the standard normal cumulative distribution function.
 
 The verification model is estimated using a logit regression model
-linear in \eqn{T} and \eqn{A} based on all subjects, given by
+linear in \eqn{Test} and \eqn{A} based on all subjects, given by
 
 \deqn{
   \operatorname{logit}(\pi_i)
@@ -75,11 +83,11 @@ The function may also produce a density plot of the test measurements when \code
 }
 \examples{
 set.seed(123)
-T <- abs(rnorm(100))
+Test <- abs(rnorm(100))
 A <- abs(rnorm(100))
-D <- as.logical(T + A > stats::quantile(T + A, 0.8))
+D <- as.logical(Test + A > stats::quantile(Test + A, 0.8))
 D[sample(100, 30)] <- NA
-yi.ci.mar(T, D, A, n.boot = 20, plot = FALSE)
+yi.ci.mar(Test, D, A, n.boot = 20, plot = FALSE)
 
 }
 \references{

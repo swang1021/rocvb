@@ -533,9 +533,8 @@ sen.ci.mar <- function(Test,
       wt_gb_pos = pmax(wtsb$wd[k, ], 0)
       wt_fb = wt_fb_pos / sum(wt_fb_pos)
       wt_gb = wt_gb_pos / sum(wt_gb_pos)
-
-      den.fb = stats::density(Tb, weights = wt_fb)
-      den.gb = stats::density(Tb, weights = wt_gb)
+      den.fb = stats::density(Tb, weights = wt_fb, bw = stats::bw.nrd0(Tb))
+      den.gb = stats::density(Tb, weights = wt_gb, bw = stats::bw.nrd0(Tb))
       fchatb = max(stats::splinefun(den.fb$x, den.fb$y)(cb), 1e-8)
       gchatb = stats::splinefun(den.gb$x, den.gb$y)(cb)
 
@@ -706,9 +705,8 @@ sen.ci.mar <- function(Test,
     wt_g_pos = pmax(wts$wd[i, ], 0)
     wt_f = wt_f_pos / sum(wt_f_pos)
     wt_g = wt_g_pos / sum(wt_g_pos)
-
-    den.f = stats::density(Test, weights = wt_f)
-    den.g = stats::density(Test, weights = wt_g)
+    den.f = stats::density(Test, weights = wt_f, bw = stats::bw.nrd0(Test))
+    den.g = stats::density(Test, weights = wt_g, bw = stats::bw.nrd0(Test))
     fchat = max(stats::splinefun(den.f$x, den.f$y)(cp[i]), 1e-8)
     gchat = stats::splinefun(den.g$x, den.g$y)(cp[i])
 

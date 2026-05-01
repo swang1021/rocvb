@@ -5,7 +5,7 @@
 \title{Confidence Intervals for AUC Under MAR Verification}
 \usage{
 auc.ci.mar(
-  T,
+  Test,
   D,
   A,
   alpha = 0.05,
@@ -17,7 +17,7 @@ auc.ci.mar(
 )
 }
 \arguments{
-\item{T}{Test results; a positive numeric vector.}
+\item{Test}{Test results; a positive numeric vector.}
 
 \item{D}{Verified disease status; a logical vector with possible missing values.}
 
@@ -60,7 +60,7 @@ Bootstrap and hybrid empirical likelihood confidence intervals for AUC under
 verification bias are computed.
 
 The disease model \eqn{\rho} is estimated using a probit regression model
-linear in \eqn{T} and \eqn{A} based on verified subjects, given by
+linear in \eqn{Test} and \eqn{A} based on verified subjects, given by
 
 \deqn{
   \rho_i = P(D_i = 1 \mid T_i, A_i)
@@ -71,7 +71,7 @@ linear in \eqn{T} and \eqn{A} based on verified subjects, given by
 where \eqn{\Phi} denotes the standard normal cumulative distribution function.
 
 The verification model is estimated using a logit regression model
-linear in \eqn{T} and \eqn{A} based on all subjects, given by
+linear in \eqn{Test} and \eqn{A} based on all subjects, given by
 
 \deqn{
   \operatorname{logit}(\pi_i)
@@ -86,17 +86,17 @@ The function may also produce a density plot of the test measurements when \code
 }
 \examples{
 set.seed(123)
-T <- abs(rnorm(100))
+Test <- abs(rnorm(100))
 A <- abs(rnorm(100))
-D <- as.logical(T + A > stats::quantile(T + A, 0.8))
+D <- as.logical(Test + A > stats::quantile(Test + A, 0.8))
 D[sample(100, 30)] <- NA
-auc.ci.mar(T, D, A, n.boot = 20, plot = FALSE)
+auc.ci.mar(Test, D, A, n.boot = 20, plot = FALSE)
 }
 \references{
 Alonzo, T. A. and Pepe, M. S. (2005). Assessing accuracy of a continuous
 screening test in the presence of verification bias. \emph{Journal of the Royal
 Statistical Society: Series C (Applied Statistics)}.
 
-Wang, S., Shi, S., and Qin, G. (2025). Empirical likelihood inference for the area
+Wang, S., Shi, S., and Qin, G. (2026). Empirical likelihood inference for the area
 under the ROC curve with verification-biased data. Manuscript under peer review.
 }
