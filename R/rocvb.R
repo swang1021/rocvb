@@ -5,7 +5,7 @@
 #' four estimates simultaneously, obtained using the bias-corrected estimators FI, MSI,
 #' IPW, and SPE proposed by Alonzo and Pepe (2005).
 #'
-#' @param T Test results; a positive numeric vector.
+#' @param Test Test results; a positive numeric vector.
 #' @param D Verified disease status; a logical vector with possible missing values.
 #' @param A Covariate; a positive numeric vector. Only one covariate is allowed.
 #' @param alpha Significance level for the confidence interval. Default is 0.05.
@@ -33,7 +33,7 @@
 #' screening test in the presence of verification bias. *Journal of the Royal
 #' Statistical Society: Series C (Applied Statistics)*.
 #'
-#' Wang, S., Shi, S., and Qin, G. (2025). Empirical likelihood inference for the area
+#' Wang, S., Shi, S., and Qin, G. (2026). Empirical likelihood inference for the area
 #' under the ROC curve with verification-biased data. Manuscript under peer review.
 #'
 #' @details
@@ -41,7 +41,7 @@
 #' verification bias are computed.
 #'
 #' The disease model \eqn{\rho} is estimated using a probit regression model
-#' linear in \eqn{T} and \eqn{A} based on verified subjects, given by
+#' linear in \eqn{Test} and \eqn{A} based on verified subjects, given by
 #'
 #' \deqn{
 #'   \rho_i = P(D_i = 1 \mid T_i, A_i)
@@ -52,7 +52,7 @@
 #' where \eqn{\Phi} denotes the standard normal cumulative distribution function.
 #'
 #' The verification model is estimated using a logit regression model
-#' linear in \eqn{T} and \eqn{A} based on all subjects, given by
+#' linear in \eqn{Test} and \eqn{A} based on all subjects, given by
 #'
 #' \deqn{
 #'   \operatorname{logit}(\pi_i)
@@ -67,14 +67,14 @@
 #'
 #' @examples
 #' set.seed(123)
-#' T <- abs(rnorm(100))
+#' Test <- abs(rnorm(100))
 #' A <- abs(rnorm(100))
-#' D <- as.logical(T + A > stats::quantile(T + A, 0.8))
+#' D <- as.logical(Test + A > stats::quantile(Test + A, 0.8))
 #' D[sample(100, 30)] <- NA
-#' auc.ci.mar(T, D, A, n.boot = 20, plot = FALSE)
+#' auc.ci.mar(Test, D, A, n.boot = 20, plot = FALSE)
 
 #' @export
-auc.ci.mar <- function(T,
+auc.ci.mar <- function(Test,
                        D,
                        A,
                        alpha = 0.05,
@@ -103,26 +103,26 @@ auc.ci.mar <- function(T,
     return(drop(scale(transformed_x)))
   }
   #Function used to calculate weights given sample
-  get_weights = function(T, D, A, V, n) {
+  get_weights = function(Test, D, A, V, n) {
     # Fit Disease model
     disease = stats::glm(
-      D[V == 1] ~ T[V == 1] + A[V == 1],
+      D[V == 1] ~ Test[V == 1] + A[V == 1],
       family = stats::binomial(link = 'probit'),
       control = list(maxit = 100)
     )
     beta = disease$coefficients
-    rho = drop(stats::pnorm(cbind(rep(1, n), T, A) %*% beta))
+    rho = drop(stats::pnorm(cbind(rep(1, n), Test, A) %*% beta))
     rho[rho > 1 - precision] = 1 - precision
     rho[rho < precision] = precision
     # Fit Verification model
     Verif = stats::glm(
-      V ~ T + A,
+      V ~ Test + A,
       family = stats::binomial(link = 'logit'),
       control = list(maxit = 100)
     )
     betaV = Verif$coefficients
     pi_hat = drop(1 / (1 + exp(-(
-      cbind(1, T, A) %*% betaV
+      cbind(1, Test, A) %*% betaV
     ))))
     pi_hat[pi_hat > 1 - precision] = 1 - precision
     pi_hat[pi_hat < precision] = precision
@@ -145,7 +145,7 @@ auc.ci.mar <- function(T,
   #Calculate bootstrap Copies of auc
   BSP = function(dummy) {
     boots = sample(1:n, n, replace = TRUE)
-    Tb = T[boots]
+    Tb = Test[boots]
     Db = D[boots]
     Ab = A[boots]
     Vb = V[boots]
@@ -225,7 +225,7 @@ auc.ci.mar <- function(T,
   if (sum(D, na.rm = TRUE) <= 10 ||
       sum(!D, na.rm = TRUE) <= 10)
     warning("Not enough verified subjects (<=10)")
-  verified = data.frame(Tv = T[V == 1], Dv = factor(D[V == 1]))
+  verified = data.frame(Tv = Test[V == 1], Dv = factor(D[V == 1]))
   Density.plot <- ggplot2::ggplot(verified, ggplot2::aes(x = Tv, linetype = Dv)) +
     ggplot2::geom_density(color = "black", linewidth = 1) +
     ggplot2::scale_linetype_manual(
@@ -252,20 +252,20 @@ auc.ci.mar <- function(T,
     )
   if (plot)
     plot(Density.plot)
-  n = length(T)
+  n = length(Test)
   za = stats::qnorm(1 - alpha / 2)
-  T = bc.scale(T)
+  Test = bc.scale(Test)
   A = bc.scale(A)
   D = as.numeric(D)
   D[is.na(D)] = 0
   V = as.numeric(V)
   d = (-1)^(pROC::roc(response = verified$Dv, predictor = verified$Tv)$d == ">")
-  T = d * T
+  Test = d * Test
   #Calculate weights
-  wts = get_weights(T, D, A, V, n)
+  wts = get_weights(Test, D, A, V, n)
   sum.wd = apply(wts$wd, 1, sum)
   sum.wn = apply(wts$wn, 1, sum)
-  TT = matrix(rep(T, n), n)
+  TT = matrix(rep(Test, n), n)
   It = (TT >= t(TT)) + 0
   ghat = (wts$wd %*% It) / apply(wts$wd, 1, sum)
   deltahat = diag((ghat %*% t(wts$wn)) / apply(wts$wn, 1, sum))
@@ -341,7 +341,7 @@ auc.ci.mar <- function(T,
 #' The function returns four estimates simultaneously, obtained using the bias-corrected estimators
 #' FI, MSI, IPW, and SPE proposed by Alonzo and Pepe (2005).
 #'
-#' @param T Test results; a positive numeric vector.
+#' @param Test Test results; a positive numeric vector.
 #' @param D Verified disease status; a logical vector with possible missing values.
 #' @param A Covariate; a positive numeric vector. Only one covariate is allowed.
 #' @param p Target specificity level; a number between 0 and 1.
@@ -375,7 +375,7 @@ auc.ci.mar <- function(T,
 #' screening test in the presence of verification bias. *Journal of the Royal
 #' Statistical Society: Series C (Applied Statistics)*.
 #'
-#' Wang, S., Shi, S., and Qin, G. (2025). Empirical likelihood-based confidence
+#' Wang, S., Shi, S., and Qin, G. (2026). Empirical likelihood-based confidence
 #' intervals for sensitivity of a continuous test at a fixed level of specificity
 #' with verification bias. Manuscript under peer review.
 #'
@@ -386,7 +386,7 @@ auc.ci.mar <- function(T,
 #'  confidence intervals are computed as returned in the list.
 #'
 #' The disease model \eqn{\rho} is estimated using a probit regression model
-#' linear in \eqn{T} and \eqn{A} based on verified subjects, given by
+#' linear in \eqn{Test} and \eqn{A} based on verified subjects, given by
 #'
 #' \deqn{
 #'   \rho_i = P(D_i = 1 \mid T_i, A_i)
@@ -397,7 +397,7 @@ auc.ci.mar <- function(T,
 #' where \eqn{\Phi} denotes the standard normal cumulative distribution function.
 #'
 #' The verification model is estimated using a logit regression model
-#' linear in \eqn{T} and \eqn{A} based on all subjects, given by
+#' linear in \eqn{Test} and \eqn{A} based on all subjects, given by
 #'
 #' \deqn{
 #'   \operatorname{logit}(\pi_i)
@@ -412,14 +412,14 @@ auc.ci.mar <- function(T,
 #'
 #' @examples
 #' set.seed(123)
-#' T <- abs(rnorm(100))
+#' Test <- abs(rnorm(100))
 #' A <- abs(rnorm(100))
-#' D <- as.logical(T + A > stats::quantile(T + A, 0.8))
+#' D <- as.logical(Test + A > stats::quantile(Test + A, 0.8))
 #' D[sample(100, 30)] <- NA
-#' sen.ci.mar(T, D, A, p = 0.8, n.boot = 20, plot = FALSE)
+#' sen.ci.mar(Test, D, A, p = 0.8, n.boot = 20, plot = FALSE)
 #'
 #' @export
-sen.ci.mar <- function(T,
+sen.ci.mar <- function(Test,
                        D,
                        A,
                        p,
@@ -449,26 +449,26 @@ sen.ci.mar <- function(T,
     return(drop(scale(transformed_x)))
   }
   #Function used to calculate weights given sample
-  get_weights = function(T, D, A, V, n) {
+  get_weights = function(Test, D, A, V, n) {
     # Fit Disease model
     disease = stats::glm(
-      D[V == 1] ~ T[V == 1] + A[V == 1],
+      D[V == 1] ~ Test[V == 1] + A[V == 1],
       family = stats::binomial(link = 'probit'),
       control = list(maxit = 100)
     )
     beta = disease$coefficients
-    rho = drop(stats::pnorm(cbind(rep(1, n), T, A) %*% beta))
+    rho = drop(stats::pnorm(cbind(rep(1, n), Test, A) %*% beta))
     rho[rho > 1 - precision] = 1 - precision
     rho[rho < precision] = precision
     # Fit Verification model
     Verif = stats::glm(
-      V ~ T + A,
+      V ~ Test + A,
       family = stats::binomial(link = 'logit'),
       control = list(maxit = 100)
     )
     betaV = Verif$coefficients
     pi_hat = drop(1 / (1 + exp(-(
-      cbind(1, T, A) %*% betaV
+      cbind(1, Test, A) %*% betaV
     ))))
     pi_hat[pi_hat > 1 - precision] = 1 - precision
     pi_hat[pi_hat < precision] = precision
@@ -491,7 +491,7 @@ sen.ci.mar <- function(T,
 
   BSP = function(dummy) {
     boots = sample(1:n, n, replace = TRUE)
-    Tb = T[boots]
+    Tb = Test[boots]
     Db = D[boots]
     Ab = A[boots]
     Vb = V[boots]
@@ -593,7 +593,7 @@ sen.ci.mar <- function(T,
   if (sum(D, na.rm = TRUE) <= 10 ||
       sum(!D, na.rm = TRUE) <= 10)
     warning("Not enough verified subjects (<=10)")
-  verified = data.frame(Tv = T[V == 1], Dv = factor(D[V == 1]))
+  verified = data.frame(Tv = Test[V == 1], Dv = factor(D[V == 1]))
   Density.plot = ggplot2::ggplot(verified, ggplot2::aes(x = Tv, linetype = Dv)) +
     ggplot2::geom_density(color = "black", linewidth = 1) +
     ggplot2::scale_linetype_manual(
@@ -620,28 +620,28 @@ sen.ci.mar <- function(T,
     )
   if (plot)
     plot(Density.plot)
-  n = length(T)
+  n = length(Test)
   za = stats::qnorm(1 - alpha / 2)
-  T = bc.scale(T)
+  Test = bc.scale(Test)
   A = bc.scale(A)
   D = as.numeric(D)
   D[is.na(D)] = 0
   V = as.numeric(V)
   d = (-1)^(pROC::roc(response = verified$Dv, predictor = verified$Tv)$d == ">")
-  T = d * T
+  Test = d * Test
   #Calculate weights
-  wts = get_weights(T, D, A, V, n)
+  wts = get_weights(Test, D, A, V, n)
   sum.wd = apply(wts$wd, 1, sum)
   sum.wn = apply(wts$wn, 1, sum)
-  TT = matrix(rep(T, n), n)
+  TT = matrix(rep(Test, n), n)
   It = (TT >= t(TT)) + 0
   HEL_U = (wts$wn %*% It) / apply(wts$wn, 1, sum)
   #Find J and cutoff
-  Tsort = sort(T)
+  Tsort = sort(Test)
   ctest = Tsort[1:n - 1] + (Tsort[2:n] - Tsort[1:n - 1]) / 2
   jm = NULL
   for (c in ctest) {
-    t_temp = (T < c) + 0
+    t_temp = (Test < c) + 0
     #Spe
     spe = drop(t_temp %*% t(wts$wn)) / sum.wn
     spe = pmin(pmax(spe, 0), 1)
@@ -649,7 +649,7 @@ sen.ci.mar <- function(T,
   }
   cp = ctest[apply(jm <= p, 2, which.min)]
   comp = outer(
-    T,
+    Test,
     cp,
     FUN = function(x, y)
       x >= y
@@ -707,14 +707,14 @@ sen.ci.mar <- function(T,
     wt_f = wt_f_pos / sum(wt_f_pos)
     wt_g = wt_g_pos / sum(wt_g_pos)
 
-    den.f = stats::density(T, weights = wt_f)
-    den.g = stats::density(T, weights = wt_g)
+    den.f = stats::density(Test, weights = wt_f)
+    den.g = stats::density(Test, weights = wt_g)
     fchat = max(stats::splinefun(den.f$x, den.f$y)(cp[i]), 1e-8)
     gchat = stats::splinefun(den.g$x, den.g$y)(cp[i])
 
-    W_A = (wts$wd[i, ] / mean(wts$wd[i, ])) * (T > cp[i])
+    W_A = (wts$wd[i, ] / mean(wts$wd[i, ])) * (Test > cp[i])
     W_B = (wts$wd[i, ] / mean(wts$wd[i, ]))
-    W_C = (gchat / fchat) * (wts$wn[i, ] / mean(wts$wn[i, ])) * ((T <= cp[i]) - p)
+    W_C = (gchat / fchat) * (wts$wn[i, ] / mean(wts$wn[i, ])) * ((Test <= cp[i]) - p)
 
     IFEL_LLR = function(delta) {
       tryCatch(
@@ -819,7 +819,7 @@ sen.ci.mar <- function(T,
 #' returns four estimates simultaneously, obtained using the bias-corrected estimators
 #' FI, MSI, IPW, and SPE proposed by Alonzo and Pepe (2005).
 #'
-#' @param T Test results; a positive numeric vector.
+#' @param Test Test results; a positive numeric vector.
 #' @param D Verified disease status; a logical vector with possible missing values.
 #' @param A Covariate; a positive numeric vector. Only one covariate is allowed.
 #' @param alpha Significance level for the confidence interval. Default is 0.05.
@@ -856,7 +856,7 @@ sen.ci.mar <- function(T,
 #' Bootstrap and MOVER-based confidence intervals are computed for the maximum Youden index.
 #'
 #' The disease model \eqn{\rho} is estimated using a probit regression model
-#' linear in \eqn{T} and \eqn{A} based on verified subjects, given by
+#' linear in \eqn{Test} and \eqn{A} based on verified subjects, given by
 #'
 #' \deqn{
 #'   \rho_i = P(D_i = 1 \mid T_i, A_i)
@@ -867,7 +867,7 @@ sen.ci.mar <- function(T,
 #' where \eqn{\Phi} denotes the standard normal cumulative distribution function.
 #'
 #' The verification model is estimated using a logit regression model
-#' linear in \eqn{T} and \eqn{A} based on all subjects, given by
+#' linear in \eqn{Test} and \eqn{A} based on all subjects, given by
 #'
 #' \deqn{
 #'   \operatorname{logit}(\pi_i)
@@ -882,14 +882,14 @@ sen.ci.mar <- function(T,
 #'
 #' @examples
 #' set.seed(123)
-#' T <- abs(rnorm(100))
+#' Test <- abs(rnorm(100))
 #' A <- abs(rnorm(100))
-#' D <- as.logical(T + A > stats::quantile(T + A, 0.8))
+#' D <- as.logical(Test + A > stats::quantile(Test + A, 0.8))
 #' D[sample(100, 30)] <- NA
-#' yi.ci.mar(T, D, A, n.boot = 20, plot = FALSE)
+#' yi.ci.mar(Test, D, A, n.boot = 20, plot = FALSE)
 #'
 #' @export
-yi.ci.mar <- function(T,
+yi.ci.mar <- function(Test,
                       D,
                       A,
                       alpha = 0.05,
@@ -916,26 +916,26 @@ yi.ci.mar <- function(T,
     return(drop(scale(transformed_x)))
   }
   #Function used to calculate weights given sample
-  get_weights = function(T, D, A, V, n) {
+  get_weights = function(Test, D, A, V, n) {
     # Fit Disease model
     disease = stats::glm(
-      D[V == 1] ~ T[V == 1] + A[V == 1],
+      D[V == 1] ~ Test[V == 1] + A[V == 1],
       family = stats::binomial(link = 'probit'),
       control = list(maxit = 100)
     )
     beta = disease$coefficients
-    rho = drop(stats::pnorm(cbind(rep(1, n), T, A) %*% beta))
+    rho = drop(stats::pnorm(cbind(rep(1, n), Test, A) %*% beta))
     rho[rho > 1 - precision] = 1 - precision
     rho[rho < precision] = precision
     # Fit Verification model
     Verif = stats::glm(
-      V ~ T + A,
+      V ~ Test + A,
       family = stats::binomial(link = 'logit'),
       control = list(maxit = 100)
     )
     betaV = Verif$coefficients
     pi_hat = drop(1 / (1 + exp(-(
-      cbind(1, T, A) %*% betaV
+      cbind(1, Test, A) %*% betaV
     ))))
     pi_hat[pi_hat > 1 - precision] = 1 - precision
     pi_hat[pi_hat < precision] = precision
@@ -958,7 +958,7 @@ yi.ci.mar <- function(T,
   #Function used to Calculate Bootstrap Copies of Jtilde
   BSP = function(dummy) {
     boots = sample(1:n, n, replace = TRUE)
-    Tb = T[boots]
+    Tb = Test[boots]
     Db = D[boots]
     Ab = A[boots]
     Vb = V[boots]
@@ -983,7 +983,7 @@ yi.ci.mar <- function(T,
   if (sum(D, na.rm = TRUE) <= 10 ||
       sum(!D, na.rm = TRUE) <= 10)
     warning("Not enough verified subjects (<=10)")
-  verified = data.frame(Tv = T[V == 1], Dv = factor(D[V == 1]))
+  verified = data.frame(Tv = Test[V == 1], Dv = factor(D[V == 1]))
   Density.plot = ggplot2::ggplot(verified, ggplot2::aes(x = Tv, linetype = Dv)) +
     ggplot2::geom_density(color = "black", linewidth = 1) +
     ggplot2::scale_linetype_manual(
@@ -1010,29 +1010,29 @@ yi.ci.mar <- function(T,
     )
   if (plot)
     plot(Density.plot)
-  n = length(T)
+  n = length(Test)
   za = stats::qnorm(1 - alpha / 2)
-  T.raw = T
-  T = bc.scale(T)
+  Test.raw = Test
+  Test = bc.scale(Test)
   A = bc.scale(A)
   D = as.numeric(D)
   D[is.na(D)] = 0
   V = as.numeric(V)
   d = (-1)^(pROC::roc(response = verified$Dv, predictor = verified$Tv)$d == ">")
-  T = d * T
+  Test = d * Test
   #Calculate weights
-  wts = get_weights(T, D, A, V, n)
+  wts = get_weights(Test, D, A, V, n)
   sum.wd = apply(wts$wd, 1, sum)
   sum.wn = apply(wts$wn, 1, sum)
   #Search for j & cutoff point
-  Tsort = sort(T)
+  Tsort = sort(Test)
   ctest = Tsort[1:n - 1] + (Tsort[2:n] - Tsort[1:n - 1]) / 2
   sen.m = NULL
   spe.m = NULL
   for (k in 1:length(ctest)) {
     c = ctest[k]
-    t_temp_1 = (T >= c) + 0
-    t_temp_2 = (T < c) + 0
+    t_temp_1 = (Test >= c) + 0
+    t_temp_2 = (Test < c) + 0
     # Spe
     spe = drop(t_temp_2 %*% t(wts$wn)) / sum.wn
     spe = pmin(pmax(spe, 0), 1)
@@ -1045,7 +1045,7 @@ yi.ci.mar <- function(T,
   jm = apply(sen.m + spe.m - 1, 2, max)
   loc = apply(sen.m + spe.m - 1, 2, which.max)
   cp = ctest[loc]
-  cp.raw = apply(rbind(sort(T.raw, decreasing = (d == -1))[loc], sort(T.raw, decreasing = (d == -1))[loc + 1]), 2, mean)
+  cp.raw = apply(rbind(sort(Test.raw, decreasing = (d == -1))[loc], sort(Test.raw, decreasing = (d == -1))[loc + 1]), 2, mean)
   #Find Fhat & Ghat
   Fhat = spe.m[cbind(loc, 1:4)]
   Ghat = 1 - sen.m[cbind(loc, 1:4)]
@@ -1055,8 +1055,8 @@ yi.ci.mar <- function(T,
   Wald.lb = pmin(pmax(Wald.lb, 0), 1)
   Wald.ub = pmin(pmax(Wald.ub, 0), 1)
   #MOVER methods
-  Gtilde = (diag(wts$wd %*% drop(outer(T, cp, '<'))) + 0.5 * za^2) / (sum.wd + za^2)
-  Ftilde = (diag(wts$wn %*% drop(outer(T, cp, '<'))) + 0.5 * za^2) / (sum.wn + za^2)
+  Gtilde = (diag(wts$wd %*% drop(outer(Test, cp, '<'))) + 0.5 * za^2) / (sum.wd + za^2)
+  Ftilde = (diag(wts$wn %*% drop(outer(Test, cp, '<'))) + 0.5 * za^2) / (sum.wn + za^2)
   Gtilde = pmin(pmax(Gtilde, 0), 1)
   Ftilde = pmin(pmax(Ftilde, 0), 1)
   LGac = Gtilde - za * sqrt(Gtilde * (1 - Gtilde) / (sum.wd + za^2))
